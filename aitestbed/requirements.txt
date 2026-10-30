@@ -34,8 +34,10 @@ Pillow>=10.0.0
 # Optional: Token counting
 tiktoken>=0.5.0
 
-# L7 Capture (HTTP/HTTPS interception)
-mitmproxy>=10.0.0
+# L7 Capture (HTTP/HTTPS interception): mitmproxy is NOT installed from this
+# file. Its pinned dependencies (h11, pyperclip) conflict with httpx and with
+# the MCP server packages below, which made the whole install fail.
+# Install it in a separate environment, see requirements-l7.txt.
 
 # L3/L4 Capture (pcap analysis)
 dpkt>=1.9.8

@@ -385,6 +385,10 @@ pip install -e netemu
 # Install testbed dependencies
 pip install -r aitestbed/requirements.txt
 
+# Optional, for L7 capture: mitmproxy in its own environment
+# (it conflicts with requirements.txt; see aitestbed/requirements-l7.txt)
+pipx install mitmproxy
+
 # Install npm-based MCP servers
 npm install -g @modelcontextprotocol/server-brave-search
 npm install -g @modelcontextprotocol/server-filesystem
