@@ -15,7 +15,7 @@ The core testing framework that orchestrates experiments across multiple AI prov
 
 **Features:**
 - **11 scenario types**: Chat, agentic AI with MCP tools, image generation, multimodal, video understanding, realtime WebSocket/WebRTC
-- **LLM providers**: OpenAI, Gemini, DeepSeek, vLLM, plus OpenAI Realtime (WebSocket/WebRTC)
+- **LLM providers**: OpenAI, Gemini, DeepSeek, Anthropic (Claude), vLLM, plus OpenAI Realtime (WebSocket/WebRTC)
 - **60+ metrics**: TTFT/TTLT, latency percentiles, UL/DL ratios, token rates, agent loop factors
 - **Multi-layer traffic capture**: L3/L4 via tcpdump, L7 via mitmproxy
 - **SQLite logging** with structured metrics schema

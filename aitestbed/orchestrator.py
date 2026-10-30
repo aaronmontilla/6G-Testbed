@@ -22,7 +22,15 @@ load_dotenv()  # Loads from .env in current directory
 load_dotenv(Path(__file__).parent / ".env")  # Also try aitestbed/.env
 load_dotenv(Path(__file__).parent.parent / ".env")  # Also try repo root .env
 
-from clients import OpenAIClient, GeminiClient, DeepSeekClient, VLLMClient, AzureOpenAIClient, AzureInferenceClient
+from clients import (
+    OpenAIClient,
+    GeminiClient,
+    DeepSeekClient,
+    VLLMClient,
+    AzureOpenAIClient,
+    AzureInferenceClient,
+    AnthropicClient,
+)
 from analysis import TrafficLogger, MetricsCalculator, LogRecord
 from netemu import NetworkEmulator
 from scenarios import (
@@ -295,6 +303,8 @@ class TestbedOrchestrator:
                 self._clients[provider] = AzureOpenAIClient()
             elif provider == "azure_inference":
                 self._clients[provider] = AzureInferenceClient()
+            elif provider == "anthropic":
+                self._clients[provider] = AnthropicClient()
             else:
                 raise ValueError(f"Unknown provider: {provider}")
         return self._clients[provider]
