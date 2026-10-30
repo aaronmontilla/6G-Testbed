@@ -82,6 +82,35 @@ scenarios:
       - "Describe the main actions in the video."
 
   # =============================================================================
+  # Anthropic (Claude) LLM Scenarios
+  # =============================================================================
+
+  chat_anthropic:
+    type: "chat"
+    inter_prompt_delay_sec: 0  # sec between prompts; 0 = back-to-back
+    description: "Basic chat interaction using Claude"
+    provider: "anthropic"
+    model: "claude-sonnet-5-5"
+    stream: false
+    prompts:
+      - "Briefly describe potential 6G media trends and AI services."
+      - "What are the key challenges for immersive media over mobile networks?"
+      - "Explain the role of edge computing in 6G architectures."
+
+  chat_anthropic_streaming:
+    type: "chat"
+    inter_prompt_delay_sec: 0  # sec between prompts; 0 = back-to-back
+    description: "Streaming chat interaction using Claude"
+    provider: "anthropic"
+    model: "claude-sonnet-5-5"
+    stream: true
+    max_turns: 5
+    prompts:
+      - "What is the Model Context Protocol (MCP) and how does it work?"
+      - "How can AI agents improve user experience in mobile applications?"
+      - "Describe traffic patterns for real-time AI inference."
+
+  # =============================================================================
   # DeepSeek LLM Scenarios
   # =============================================================================
 

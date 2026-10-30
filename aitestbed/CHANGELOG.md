@@ -7,5 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Anthropic (Claude) LLM provider (`provider: "anthropic"`), using the
+  official Anthropic SDK: chat, streaming and tool calling for agent
+  scenarios; `chat_anthropic` and `chat_anthropic_streaming` scenarios;
+  anonymization aliases for Claude models.
+
 ## [0.1.0] - 2026-01-19
 - Initial release of the 6G AI Traffic Characterization Testbed.

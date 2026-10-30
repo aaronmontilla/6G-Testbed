@@ -10,7 +10,8 @@
     "deepseek": "Provider C",
     "azure_openai": "Provider D",
     "azure_inference": "Provider E",
-    "vllm": "Provider F"
+    "vllm": "Provider F",
+    "anthropic": "Provider G"
   },
   "models": {
     "gpt-5-mini": "Model A1",
@@ -26,7 +27,10 @@
     "gpt-image-1-mini": "Model D1",
     "Phi-4-mini-instruct": "Model E1",
     "Llama-4-Maverick-17B-128E-Instruct-FP8": "Model E2",
-    "Qwen/Qwen3-VL-30B-A3B-Instruct": "Model F1"
+    "Qwen/Qwen3-VL-30B-A3B-Instruct": "Model F1",
+    "claude-opus-5-5": "Model G1",
+    "claude-sonnet-5-5": "Model G2",
+    "claude-haiku-5-5": "Model G3"
   },
   "scenarios": {
     "chat_basic": "Chat Basic",
@@ -72,6 +76,8 @@
     "playwright_web_test": "MCP Browser Test",
     "playwright_web_test_text": "MCP Browser Test (Text)",
     "chat_vllm": "Chat (Local Inference)",
-    "video_understanding_vllm": "Video Understanding (Local Inference)"
+    "video_understanding_vllm": "Video Understanding (Local Inference)",
+    "chat_anthropic": "Chat Basic",
+    "chat_anthropic_streaming": "Chat Streaming"
   }
 }

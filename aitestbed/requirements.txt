@@ -12,6 +12,7 @@ openai>=1.0.0
 azure-ai-inference>=1.0.0b1
 google-genai>=1.0.0
 websockets>=12.0  # For OpenAI Realtime API
+anthropic>=2.3.0  # Claude (Messages API)
 
 # Data Processing
 pandas>=2.0.0

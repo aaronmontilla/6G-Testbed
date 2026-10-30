@@ -162,6 +162,8 @@ The run ends with a summary banner showing duration, total records, success rate
 | `chat_deepseek_streaming` | DeepSeek | deepseek-chat | Yes | DeepSeek streaming chat |
 | `chat_deepseek_coder` | DeepSeek | deepseek-coder | Yes | Code-focused chat |
 | `chat_deepseek_reasoner` | DeepSeek | deepseek-reasoner | Yes | Deep reasoning chat (R1) |
+| `chat_anthropic` | Anthropic | claude-sonnet-5-5 | No | Claude chat |
+| `chat_anthropic_streaming` | Anthropic | claude-sonnet-5-5 | Yes | Claude streaming chat |
 | `chat_vllm` | vLLM | Qwen3-VL-30B-A3B | Yes | Self-hosted model (loopback) |
 
 ### Agentic AI (MCP Tool Calling)
@@ -401,6 +403,7 @@ npm install -g @modelcontextprotocol/server-memory
 export OPENAI_API_KEY="sk-..."          # OpenAI scenarios
 export GOOGLE_API_KEY="..."             # Gemini scenarios
 export DEEPSEEK_API_KEY="..."           # DeepSeek scenarios
+export ANTHROPIC_API_KEY="sk-ant-..."   # Claude scenarios (provider "anthropic")
 export BRAVE_API_KEY="..."              # Agent scenarios (web search)
 export SPOTIFY_CLIENT_ID="..."          # Music agent scenarios
 export SPOTIFY_CLIENT_SECRET="..."      # Music agent scenarios
