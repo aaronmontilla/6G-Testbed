@@ -1,0 +1,12 @@
+# Normalize text files to LF in the repository.
+* text=auto
+
+# Files executed inside Linux containers must keep LF endings in the working
+# tree, also when the repository is cloned on Windows (core.autocrlf=true).
+# With CRLF, "#!/bin/bash" becomes "#!/bin/bash\r" and the script fails with
+# "cannot execute: required file not found".
+*.sh            text eol=lf
+Dockerfile      text eol=lf
+Dockerfile.*    text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
