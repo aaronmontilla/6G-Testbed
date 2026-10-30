@@ -61,6 +61,10 @@ source venv/bin/activate
 pip install -e netemu
 pip install -r aitestbed/requirements.txt
 
+# Optional, for L7 capture: mitmproxy in its own environment
+# (it conflicts with requirements.txt; see aitestbed/requirements-l7.txt)
+pipx install mitmproxy
+
 # Set API keys
 export OPENAI_API_KEY="your-key"
 

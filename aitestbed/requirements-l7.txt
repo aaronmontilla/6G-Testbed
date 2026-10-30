@@ -1,0 +1,16 @@
+# L7 Capture (HTTP/HTTPS interception) - optional
+#
+# mitmproxy must be installed in its OWN environment: its pinned
+# dependencies (h11, pyperclip) conflict with httpx and with the MCP server
+# packages in requirements.txt. The testbed only runs the `mitmdump`
+# executable (capture/l7_capture.py), so it just needs to be on PATH.
+#
+# Local install, e.g.:
+#   pipx install mitmproxy
+# or:
+#   python -m venv ~/.venvs/mitmproxy
+#   ~/.venvs/mitmproxy/bin/pip install -r aitestbed/requirements-l7.txt
+#   ln -s ~/.venvs/mitmproxy/bin/mitmdump ~/.local/bin/mitmdump
+#
+# The Docker image installs it this way in /opt/mitmproxy.
+mitmproxy>=10.0.0

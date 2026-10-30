@@ -98,11 +98,22 @@ COPY netemu/ /tmp/netemu
 RUN pip install --no-cache-dir /tmp/netemu && rm -rf /tmp/netemu
 
 # Copy requirements and install Python dependencies
-# (netemu is already installed above from the sibling directory)
-COPY aitestbed/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir playwright \
-    && playwright install chromium --with-deps || true
+# (netemu is already installed above from the sibling directory).
+# No "|| true" here: a dependency conflict must fail the build instead of
+# producing an image without Python packages.
+COPY aitestbed/requirements.txt aitestbed/requirements-l7.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# mitmproxy (L7 capture) in its own virtual environment, because its pinned
+# dependencies conflict with requirements.txt; only `mitmdump` is needed.
+RUN python -m venv /opt/mitmproxy \
+    && /opt/mitmproxy/bin/pip install --no-cache-dir -r requirements-l7.txt \
+    && ln -s /opt/mitmproxy/bin/mitmdump /usr/local/bin/mitmdump
+
+# Playwright browser download is optional: the image uses the system
+# Chromium (PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH above).
+RUN playwright install chromium --with-deps \
+    || echo "WARNING: playwright browser download failed; using system Chromium"
 
 # Copy application code
 COPY aitestbed/ .
