@@ -36,11 +36,25 @@ validate_env() {
 
     local missing_vars=()
 
+    # CAMARA Dedicated Networks scenarios (dn_*) use Claude and the CAMARA gateway
+    local is_camara=false
+    if [[ "$1" == *"dn_agent"* ]] || [[ "$1" == *"dn_cleanup"* ]]; then
+        is_camara=true
+    fi
+    local is_anthropic=$is_camara
+    if [[ "$1" == *"anthropic"* ]]; then
+        is_anthropic=true
+    fi
+
     # Check for required API keys based on scenario
-    if [[ "$1" == *"openai"* ]] || [[ "$1" == *"chat"* ]] || [[ "$1" == *"image"* ]]; then
+    if [[ "$is_anthropic" == false ]] && { [[ "$1" == *"openai"* ]] || [[ "$1" == *"chat"* ]] || [[ "$1" == *"image"* ]]; }; then
         if [[ -z "$OPENAI_API_KEY" ]]; then
             missing_vars+=("OPENAI_API_KEY")
         fi
+    fi
+
+    if [[ "$is_anthropic" == true ]] && [[ -z "$ANTHROPIC_API_KEY" ]]; then
+        missing_vars+=("ANTHROPIC_API_KEY")
     fi
 
     if [[ "$1" == *"gemini"* ]]; then
@@ -49,9 +63,22 @@ validate_env() {
         fi
     fi
 
-    if [[ "$1" == *"agent"* ]] || [[ "$1" == *"search"* ]]; then
+    if [[ "$is_camara" == false ]] && { [[ "$1" == *"agent"* ]] || [[ "$1" == *"search"* ]]; }; then
         if [[ -z "$BRAVE_API_KEY" ]]; then
             log_warn "BRAVE_API_KEY not set - web search scenarios may fail"
+        fi
+    fi
+
+    if [[ "$is_camara" == true ]]; then
+        if [[ ! -f /opt/camara-dn/server.py ]]; then
+            log_error "CAMARA gateway not installed: rebuild the image with --build-arg WITH_CAMARA=1"
+            exit 1
+        fi
+        if [[ -z "$CAMARA_API_ROOT" ]]; then
+            missing_vars+=("CAMARA_API_ROOT")
+        fi
+        if [[ -z "$CAMARA_ACCESS_TOKEN" ]] && { [[ -z "$CAMARA_TOKEN_URL" ]] || [[ -z "$CAMARA_CLIENT_ID" ]] || [[ -z "$CAMARA_CLIENT_SECRET" ]]; }; then
+            log_warn "No CAMARA credentials: set CAMARA_ACCESS_TOKEN, or CAMARA_TOKEN_URL, CAMARA_CLIENT_ID and CAMARA_CLIENT_SECRET"
         fi
     fi
 

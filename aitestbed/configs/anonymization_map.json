@@ -78,6 +78,9 @@
     "chat_vllm": "Chat (Local Inference)",
     "video_understanding_vllm": "Video Understanding (Local Inference)",
     "chat_anthropic": "Chat Basic",
-    "chat_anthropic_streaming": "Chat Streaming"
+    "chat_anthropic_streaming": "Chat Streaming",
+    "dn_agent_baseline": "MCP Dedicated Network Agent",
+    "dn_agent_rule_in_system_prompt": "MCP Dedicated Network Agent (Rule in System Prompt)",
+    "dn_cleanup": "MCP Dedicated Network Cleanup"
   }
 }

@@ -111,6 +111,103 @@ scenarios:
       - "Describe traffic patterns for real-time AI inference."
 
   # =============================================================================
+  # CAMARA Dedicated Networks Agent Scenarios (MCP gateway, Claude)
+  # =============================================================================
+  # Require an image built with --build-arg WITH_CAMARA=1, CAMARA credentials
+  # in the environment (see .env.example) and ANTHROPIC_API_KEY.
+  # Disabled until configured: replace every <...> placeholder with values
+  # valid in your CAMARA environment (coordinates inside an existing service
+  # area, an existing network profile, RFC 3339 times in the future, an E.164
+  # phone number), then set "disabled: false".
+  # Each prompt is a self-contained task: the agent starts a fresh
+  # conversation per prompt, so identifiers do not carry over between prompts.
+  # The two dn_agent_* scenarios differ only in where the GeoJSON link rule
+  # reaches the model (tool descriptions only, or also the system prompt).
+
+  dn_agent_baseline:
+    type: "general_agent"
+    inter_prompt_delay_sec: 0
+    description: "Dedicated network agent over CAMARA MCP gateway (link rule only in tool descriptions)"
+    disabled: true   # set to false after replacing the <...> placeholders
+    provider: "anthropic"
+    model: "claude-sonnet-5-5"
+    server_group: "dedicated_networks"
+    mcp_transport: "http"
+    loopback_interface: "lo"
+    max_tool_calls: 15
+    system_prompt: |
+      You are a network operations assistant. You manage CAMARA dedicated
+      networks for the user through the available camara_* tools. Use the
+      tools to obtain every identifier you need; never invent identifiers.
+      When a tool returns an error, explain it and try to recover if possible.
+      Finish with a short summary of what you did and the final state of every
+      resource you created.
+    prompts:
+      # P1 - Discovery and grounding (measures link-display compliance)
+      - "Which dedicated network profiles are available, and which service areas cover latitude <LAT>, longitude <LON>? Recommend one profile and one service area and explain why."
+      # P2 - Full lifecycle with teardown in the same task
+      - "Reserve a dedicated network in a service area that covers latitude <LAT>, longitude <LON>, using the profile <PROFILE_ID_OR_NAME>, from <START_RFC3339> to <END_RFC3339>. Then grant access to the device with phone number <PHONE_E164>. Check the status of the network and of the access. Finally release everything you created: delete the access first and then the network. Report the identifiers and the final states."
+      # P3 - Error from the API (non-existent resource)
+      - "Check the status of dedicated network 00000000-0000-0000-0000-000000000000 and tell me what happened."
+      # P4 - Schema validation: valid network, then a phone number without the
+      #      international prefix (fails the gateway's E.164 pattern before any
+      #      request reaches the API). Classify each run: A) the agent sends it
+      #      and the gateway rejects it; B) the agent asks for an international
+      #      number without calling; C) the agent alters the number (failure).
+      #      Check that the network was deleted.
+      - "Reserve a dedicated network in a service area that covers latitude <LAT>, longitude <LON>, using the profile <PROFILE_ID_OR_NAME>, from <START_RFC3339> to <END_RFC3339>. Then grant access to the device whose phone number is 600123456; use the number exactly as written. Report exactly what each tool returned. Whatever happens with the access, delete the network you created before finishing."
+
+  dn_agent_rule_in_system_prompt:
+    type: "general_agent"
+    inter_prompt_delay_sec: 0
+    description: "Same as dn_agent_baseline, plus the GeoJSON link rule in the system prompt"
+    disabled: true   # set to false after replacing the <...> placeholders
+    provider: "anthropic"
+    model: "claude-sonnet-5-5"
+    server_group: "dedicated_networks"
+    mcp_transport: "http"
+    loopback_interface: "lo"
+    max_tool_calls: 15
+    system_prompt: |
+      You are a network operations assistant. You manage CAMARA dedicated
+      networks for the user through the available camara_* tools. Use the
+      tools to obtain every identifier you need; never invent identifiers.
+      When a tool returns an error, explain it and try to recover if possible.
+      Finish with a short summary of what you did and the final state of every
+      resource you created.
+
+      Service areas: Whenever you show the user a service area (its name, id or
+      geometry), include that area's GeoJSON map link ('geojsonUrl' in JSON,
+      'GeoJSON map' in Markdown) in your reply, copied in full and unmodified.
+      The only exception is when you already gave that exact link in your
+      immediately preceding message. If an area has 'geojsonNote' instead of a
+      link, tell the user that no map link is available for it.
+    prompts:
+      - "Which dedicated network profiles are available, and which service areas cover latitude <LAT>, longitude <LON>? Recommend one profile and one service area and explain why."
+      - "Reserve a dedicated network in a service area that covers latitude <LAT>, longitude <LON>, using the profile <PROFILE_ID_OR_NAME>, from <START_RFC3339> to <END_RFC3339>. Then grant access to the device with phone number <PHONE_E164>. Check the status of the network and of the access. Finally release everything you created: delete the access first and then the network. Report the identifiers and the final states."
+      - "Check the status of dedicated network 00000000-0000-0000-0000-000000000000 and tell me what happened."
+      - "Reserve a dedicated network in a service area that covers latitude <LAT>, longitude <LON>, using the profile <PROFILE_ID_OR_NAME>, from <START_RFC3339> to <END_RFC3339>. Then grant access to the device whose phone number is 600123456; use the number exactly as written. Report exactly what each tool returned. Whatever happens with the access, delete the network you created before finishing."
+
+  # WARNING: deletes EVERY dedicated network and device access visible to the
+  # CAMARA credentials. Enable it only if they are used exclusively for tests.
+  dn_cleanup:
+    type: "general_agent"
+    inter_prompt_delay_sec: 0
+    description: "Cleanup: delete all remaining device accesses and dedicated networks"
+    disabled: true   # enable explicitly when needed (see the warning above)
+    provider: "anthropic"
+    model: "claude-sonnet-5-5"
+    server_group: "dedicated_networks"
+    mcp_transport: "http"
+    loopback_interface: "lo"
+    max_tool_calls: 30
+    system_prompt: |
+      You are a network operations assistant with camara_* tools.
+      Use only list and delete tools. Never create resources.
+    prompts:
+      - "List all my dedicated networks and device accesses. Delete every device access first and then every network. Report exactly what you deleted."
+
+  # =============================================================================
   # DeepSeek LLM Scenarios
   # =============================================================================
 

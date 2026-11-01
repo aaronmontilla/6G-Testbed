@@ -12,6 +12,9 @@ services:
     build:
       context: ..
       dockerfile: aitestbed/Dockerfile
+      args:
+        # 1 = install the CAMARA Dedicated Networks MCP gateway (dn_* scenarios)
+        WITH_CAMARA: ${WITH_CAMARA:-0}
     image: 6g-ai-testbed:latest
     container_name: ai-traffic-testbed
 
@@ -26,6 +29,15 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ANTHROPIC_EFFORT=${ANTHROPIC_EFFORT:-high}
       - ANTHROPIC_FALLBACKS=${ANTHROPIC_FALLBACKS:-default}
+      # CAMARA gateway: passed only when set (an empty CAMARA_API_ROOT would
+      # override the gateway's default and break its URLs)
+      - CAMARA_API_ROOT
+      - CAMARA_ACCESS_TOKEN
+      - CAMARA_TOKEN_URL
+      - CAMARA_CLIENT_ID
+      - CAMARA_CLIENT_SECRET
+      - CAMARA_SCOPE
+      - CAMARA_TOKEN_AUTH
       - BRAVE_API_KEY=${BRAVE_API_KEY:-}
       - GOOGLE_SEARCH_API_KEY=${GOOGLE_SEARCH_API_KEY:-}
       - GOOGLE_SEARCH_CX=${GOOGLE_SEARCH_CX:-}
