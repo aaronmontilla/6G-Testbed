@@ -168,6 +168,45 @@ mcpServers:
       - retrieve
       - list_keys
 
+  # CAMARA Dedicated Networks - MCP gateway over the four CAMARA Dedicated
+  # Networks APIs (Networks, Network Profiles, Device Accesses, Service Areas)
+  # Provides: 12 camara_* tools
+  # Install: build the image with --build-arg WITH_CAMARA=1 (see Dockerfile);
+  #   outside Docker, install mcp-servers/dedicated-networks from
+  #   https://github.com/aaronmontilla/rt-camara-examples in its own venv and
+  #   adjust the two paths below.
+  # Auth: the server reads CAMARA_API_ROOT and either CAMARA_ACCESS_TOKEN or
+  #   the OAuth client credentials (CAMARA_TOKEN_URL, CAMARA_CLIENT_ID,
+  #   CAMARA_CLIENT_SECRET, CAMARA_SCOPE, CAMARA_TOKEN_AUTH) from the
+  #   testbed's environment, which MCP servers inherit; with client
+  #   credentials it renews the token itself.
+  # The server is stdio-only, so it is wrapped with http_bridge to route
+  # traffic over HTTP (subject to tc/netem on loopback).
+  camara-dn:
+    name: camara-dn
+    command: python
+    args:
+      - "-m"
+      - "mcp_servers.http_bridge"
+      - "/opt/camara-venv/bin/python"
+      - "/opt/camara-dn/server.py"
+    env: {}
+    description: "CAMARA Dedicated Networks: reserve networks, manage device access, browse profiles and service areas"
+    supports_http: true
+    tools:
+      - camara_list_profiles
+      - camara_get_profile
+      - camara_retrieve_service_areas
+      - camara_get_area
+      - camara_list_networks
+      - camara_get_network
+      - camara_create_network
+      - camara_delete_network
+      - camara_list_accesses
+      - camara_get_access
+      - camara_create_access
+      - camara_delete_access
+
 # Server Groups for Different Scenarios
 serverGroups:
   # Web Research Agent - search and fetch
@@ -199,6 +238,10 @@ serverGroups:
   playwright:
     - playwright
 
+  # CAMARA Dedicated Networks agent (needs CAMARA credentials; not in "general")
+  dedicated_networks:
+    - camara-dn
+
   # General Purpose Agent
   general:
     - brave-search
@@ -225,6 +268,9 @@ rateGroups:
     requests_per_minute: 30
   alpaca_global:
     requests_per_minute: 60
+  # Shared budget for the CAMARA API provider; adjust to what it accepts.
+  camara_global:
+    requests_per_minute: 30
 
 # Rate Limiting Configuration
 rateLimits:
@@ -270,3 +316,27 @@ rateLimits:
     rate_group: alpaca_global
   get_option_latest_quote:
     rate_group: alpaca_global
+  camara_list_profiles:
+    rate_group: camara_global
+  camara_get_profile:
+    rate_group: camara_global
+  camara_retrieve_service_areas:
+    rate_group: camara_global
+  camara_get_area:
+    rate_group: camara_global
+  camara_list_networks:
+    rate_group: camara_global
+  camara_get_network:
+    rate_group: camara_global
+  camara_create_network:
+    rate_group: camara_global
+  camara_delete_network:
+    rate_group: camara_global
+  camara_list_accesses:
+    rate_group: camara_global
+  camara_get_access:
+    rate_group: camara_global
+  camara_create_access:
+    rate_group: camara_global
+  camara_delete_access:
+    rate_group: camara_global

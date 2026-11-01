@@ -115,6 +115,22 @@ RUN python -m venv /opt/mitmproxy \
 RUN playwright install chromium --with-deps \
     || echo "WARNING: playwright browser download failed; using system Chromium"
 
+# Optional: CAMARA Dedicated Networks MCP gateway, used by the dn_* scenarios.
+# Build with --build-arg WITH_CAMARA=1. It is installed in its own virtual
+# environment (it needs mcp>=2.2) and pinned to a commit so that runs are
+# reproducible; override CAMARA_GATEWAY_REF to use another version.
+ARG WITH_CAMARA=0
+ARG CAMARA_GATEWAY_REPO=https://github.com/aaronmontilla/rt-camara-examples.git
+ARG CAMARA_GATEWAY_REF=d462cb6758257920988647fb2f9354a767a64774
+RUN if [ "$WITH_CAMARA" = "1" ]; then \
+        git clone --quiet --filter=blob:none --no-checkout "$CAMARA_GATEWAY_REPO" /tmp/rt-camara \
+        && git -C /tmp/rt-camara checkout --quiet "$CAMARA_GATEWAY_REF" \
+        && cp -r /tmp/rt-camara/mcp-servers/dedicated-networks /opt/camara-dn \
+        && rm -rf /tmp/rt-camara \
+        && python -m venv /opt/camara-venv \
+        && /opt/camara-venv/bin/pip install --no-cache-dir -r /opt/camara-dn/requirements.txt; \
+    fi
+
 # Copy application code
 COPY aitestbed/ .
 

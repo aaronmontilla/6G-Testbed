@@ -181,6 +181,27 @@ The run ends with a summary banner showing duration, total records, success rate
 | `music_playlist` | OpenAI | gpt-5-mini | music | Playlist composition |
 | `music_research` | OpenAI | gpt-5-mini | music_research | Spotify + web search |
 | `music_search_deepseek` | DeepSeek | deepseek-chat | music | Music search (DeepSeek) |
+| `dn_agent_baseline` | Anthropic | claude-sonnet-5-5 | dedicated_networks | CAMARA dedicated network agent (disabled until configured) |
+| `dn_agent_rule_in_system_prompt` | Anthropic | claude-sonnet-5-5 | dedicated_networks | Same, with the GeoJSON link rule also in the system prompt |
+| `dn_cleanup` | Anthropic | claude-sonnet-5-5 | dedicated_networks | Deletes every network and access visible to the credentials |
+
+### CAMARA Dedicated Networks (MCP gateway)
+
+The `dn_*` scenarios drive an agent that reserves dedicated networks through the
+[CAMARA Dedicated Networks MCP gateway](https://github.com/aaronmontilla/rt-camara-examples/tree/feature/dedicated-networks-mcp-server/mcp-servers/dedicated-networks)
+(12 tools over the Networks, Network Profiles, Device Accesses and Service Areas APIs). To run them:
+
+1. Build the image with the gateway: `--build-arg WITH_CAMARA=1` (see [Docker](#docker)). It is installed in its own
+   virtual environment and pinned to a commit (`CAMARA_GATEWAY_REF` in the Dockerfile).
+2. Set `ANTHROPIC_API_KEY`, `CAMARA_API_ROOT` and the CAMARA credentials (see `.env.example`): either
+   `CAMARA_ACCESS_TOKEN`, or the OAuth client credentials `CAMARA_TOKEN_URL`, `CAMARA_CLIENT_ID` and
+   `CAMARA_CLIENT_SECRET` (plus `CAMARA_SCOPE` and `CAMARA_TOKEN_AUTH` if your provider needs them). With client
+   credentials the gateway renews the token itself, so long runs keep working after the first token expires.
+3. In `configs/scenarios.yaml`, replace the `<...>` placeholders of the `dn_agent_*` scenarios with values valid in your
+   CAMARA environment and set `disabled: false`.
+
+Failed API calls come back as MCP tool errors (`isError`), so they count as failures in the metrics. `dn_cleanup`
+deletes **everything** the credentials can see; enable it only if they are used exclusively for tests.
 
 ### Browser Automation
 
@@ -404,6 +425,8 @@ export OPENAI_API_KEY="sk-..."          # OpenAI scenarios
 export GOOGLE_API_KEY="..."             # Gemini scenarios
 export DEEPSEEK_API_KEY="..."           # DeepSeek scenarios
 export ANTHROPIC_API_KEY="sk-ant-..."   # Claude scenarios (provider "anthropic")
+export CAMARA_API_ROOT="https://..."    # CAMARA dn_* scenarios, plus the CAMARA
+                                        # credentials listed in .env.example
 export BRAVE_API_KEY="..."              # Agent scenarios (web search)
 export SPOTIFY_CLIENT_ID="..."          # Music agent scenarios
 export SPOTIFY_CLIENT_SECRET="..."      # Music agent scenarios
@@ -523,6 +546,16 @@ for r in results:
 ```bash
 # Build (from repo root)
 docker build -t 6g-ai-testbed:latest -f aitestbed/Dockerfile .
+
+# Build with the CAMARA Dedicated Networks MCP gateway (dn_* scenarios)
+docker build -t 6g-ai-testbed:latest --build-arg WITH_CAMARA=1 -f aitestbed/Dockerfile .
+
+# Run a CAMARA scenario, with the keys and credentials in an env file
+docker run --rm --cap-add=NET_ADMIN --env-file aitestbed/.env \
+    -v $(pwd)/aitestbed/configs:/app/configs \
+    -v $(pwd)/logs:/app/logs \
+    6g-ai-testbed:latest \
+    python orchestrator.py --scenario dn_agent_baseline --profile 5g_urban --runs 5
 
 # Run
 docker run --rm --cap-add=NET_ADMIN \
