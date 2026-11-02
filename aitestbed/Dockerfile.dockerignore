@@ -1,0 +1,30 @@
+# Ignore rules for:  docker build -f aitestbed/Dockerfile .
+# The build context is the repository root, so Docker reads this file (named
+# after the Dockerfile) instead of aitestbed/.dockerignore, and the patterns
+# are relative to the repository root.
+
+# Git
+**/.git
+
+# Environment files contain secrets: never copy them into the image
+**/.env
+**/.env.*
+**/*.env
+!**/.env.example
+
+# Python caches and virtual environments
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+**/venv
+**/.venv
+
+# Run outputs (mounted as volumes at run time; the image creates the folders)
+aitestbed/logs
+aitestbed/results
+
+# IDE and OS files
+**/.idea
+**/.vscode
+**/.DS_Store
+**/Thumbs.db
