@@ -347,7 +347,9 @@ class BaseAgentScenario(BaseScenario):
             role = getattr(m, "role", None)
             role_str = role.value if hasattr(role, "value") else str(role)
             content_str = content if isinstance(content, str) else repr(content)
-            if content_str and content_str.startswith("Tool result from "):
+            if role == MessageRole.TOOL:
+                last_tool_call = getattr(m, "name", None)
+            elif content_str and content_str.startswith("Tool result from "):
                 # e.g. "Tool result from get_current_weather:\n{...}"
                 try:
                     last_tool_call = content_str.split(":", 1)[0].replace(
@@ -551,6 +553,15 @@ class BaseAgentScenario(BaseScenario):
                     # No more tool calls, agent is done
                     break
 
+                # With native tool messages, one assistant message records
+                # all the calls of this response and each result answers
+                # its call by id; otherwise both travel as plain text.
+                native_tools = getattr(
+                    self.client, "supports_native_tool_messages", False
+                )
+                if native_tools:
+                    messages.append(self.client.assistant_tool_message(response))
+
                 # Execute tool calls via MCP
                 for tool_call in response.tool_calls:
                     t_tool_start = time.time()
@@ -567,10 +578,11 @@ class BaseAgentScenario(BaseScenario):
                     turn_result["response_bytes"] += tool_result.response_bytes
 
                     # Add assistant message with tool call indication
-                    messages.append(ChatMessage(
-                        role=MessageRole.ASSISTANT,
-                        content=response.content or f"Calling {tool_call.name}..."
-                    ))
+                    if not native_tools:
+                        messages.append(ChatMessage(
+                            role=MessageRole.ASSISTANT,
+                            content=response.content or f"Calling {tool_call.name}..."
+                        ))
 
                     # Check the raw tool result for values that would
                     # corrupt downstream JSON serialization (e.g. NaN from
@@ -599,10 +611,19 @@ class BaseAgentScenario(BaseScenario):
                             + f"\n... [truncated from {len(tool_result_str)} chars]"
                         )
 
-                    messages.append(ChatMessage(
-                        role=MessageRole.USER,
-                        content=f"Tool result from {tool_call.name}:\n{tool_result_str}"
-                    ))
+                    if native_tools:
+                        messages.append(ChatMessage(
+                            role=MessageRole.TOOL,
+                            content=tool_result_str,
+                            name=tool_call.name,
+                            tool_call_id=tool_call.id,
+                            is_error=not tool_result.success,
+                        ))
+                    else:
+                        messages.append(ChatMessage(
+                            role=MessageRole.USER,
+                            content=f"Tool result from {tool_call.name}:\n{tool_result_str}"
+                        ))
 
                     # Trim older tool exchanges if context grows too large
                     total_chars = sum(len(m.content) for m in messages)
