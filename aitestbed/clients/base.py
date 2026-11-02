@@ -19,12 +19,30 @@ class MessageRole(Enum):
 
 
 @dataclass
+class ToolCall:
+    """Represents a tool/function call requested by the model."""
+    id: str
+    name: str
+    arguments: dict
+
+
+@dataclass
 class ChatMessage:
-    """A single message in a conversation."""
+    """A single message in a conversation.
+
+    tool_calls, is_error and raw_content are used only with clients that set
+    supports_native_tool_messages: an assistant message carries the tool
+    calls it made (and, in raw_content, the provider's own content blocks to
+    send back unchanged), and each result is a TOOL message whose
+    tool_call_id names the call it answers.
+    """
     role: MessageRole
     content: str
     name: Optional[str] = None
     tool_call_id: Optional[str] = None
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    is_error: bool = False
+    raw_content: Optional[Any] = None
 
     def to_dict(self) -> dict:
         """Convert to API-compatible dictionary."""
@@ -34,14 +52,6 @@ class ChatMessage:
         if self.tool_call_id:
             d["tool_call_id"] = self.tool_call_id
         return d
-
-
-@dataclass
-class ToolCall:
-    """Represents a tool/function call requested by the model."""
-    id: str
-    name: str
-    arguments: dict
 
 
 @dataclass
@@ -168,11 +178,27 @@ class LLMClient(ABC):
     - Image generation (where supported)
     """
 
+    # When True, the agent loop sends tool calls and tool results as
+    # structured messages (see ChatMessage) instead of plain text.
+    supports_native_tool_messages: bool = False
+
     @property
     @abstractmethod
     def provider(self) -> str:
         """Return the provider name (e.g., 'openai', 'gemini')."""
         pass
+
+    def assistant_tool_message(self, response: "ChatResponse") -> ChatMessage:
+        """Build the assistant message that records a response's tool calls.
+
+        Used by the agent loop with clients that support native tool
+        messages; clients may override it to attach raw_content.
+        """
+        return ChatMessage(
+            role=MessageRole.ASSISTANT,
+            content=response.content or "",
+            tool_calls=list(response.tool_calls),
+        )
 
     @abstractmethod
     def chat(

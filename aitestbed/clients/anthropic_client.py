@@ -1,13 +1,19 @@
 """
 Anthropic (Claude) client adapter for the 6G AI Traffic Testbed.
 
-Uses the official Anthropic Python SDK (Messages API). The testbed's agent
-loop exchanges plain-text messages and OpenAI-format tool definitions; this
-adapter converts both to the Messages API format and back.
+Uses the official Anthropic Python SDK (Messages API). The adapter converts
+the testbed's messages and OpenAI-format tool definitions to the Messages
+API format and back. In the agent loop, tool calls and tool results travel
+as native tool_use / tool_result blocks, so the model sees each result as
+the answer to its own call (with plain text, Claude may not recognize the
+results as its own and repeat the calls).
 
 Environment variables:
   ANTHROPIC_API_KEY     API key from the Claude Console (required)
   ANTHROPIC_EFFORT      low | medium | high | xhigh | max (default: high)
+  ANTHROPIC_TOOL_MESSAGES
+                        native | text (default: native). "text" restores the
+                        plain-text exchange used by the other providers.
   ANTHROPIC_FALLBACKS   "default" enables server-side refusal fallbacks on
                         the models that support them; "off" disables them
                         (default: default). With fallbacks on, a declined
@@ -55,10 +61,25 @@ class AnthropicClient(LLMClient):
         )
         self.effort = os.environ.get("ANTHROPIC_EFFORT", "high")
         self.fallbacks = os.environ.get("ANTHROPIC_FALLBACKS", "default").lower()
+        self.supports_native_tool_messages = (
+            os.environ.get("ANTHROPIC_TOOL_MESSAGES", "native").lower() != "text"
+        )
 
     @property
     def provider(self) -> str:
         return "anthropic"
+
+    def assistant_tool_message(self, response: ChatResponse) -> ChatMessage:
+        """Keep the response's content blocks (thinking, text, tool_use) so
+        they are sent back unchanged on the next request."""
+        message = super().assistant_tool_message(response)
+        raw_blocks = getattr(response.raw_response, "content", None)
+        if raw_blocks:
+            message.raw_content = [
+                {k: v for k, v in block.to_dict().items() if v is not None}
+                for block in raw_blocks
+            ]
+        return message
 
     # ------------------------------------------------------------------ helpers
 
@@ -79,12 +100,81 @@ class AnthropicClient(LLMClient):
         return converted
 
     @staticmethod
+    def _content_of(m: ChatMessage) -> str | list[dict] | None:
+        """Message content: a string for plain text, blocks for tool traffic."""
+        if m.role == MessageRole.TOOL:
+            block = {
+                "type": "tool_result",
+                "tool_use_id": m.tool_call_id,
+                "content": m.content,
+            }
+            if m.is_error:
+                block["is_error"] = True
+            return [block]
+        if m.role == MessageRole.ASSISTANT and m.raw_content:
+            return [dict(b) for b in m.raw_content]
+        if m.role == MessageRole.ASSISTANT and m.tool_calls:
+            blocks = [{"type": "text", "text": m.content}] if m.content else []
+            blocks += [
+                {"type": "tool_use", "id": tc.id, "name": tc.name, "input": tc.arguments}
+                for tc in m.tool_calls
+            ]
+            return blocks
+        return m.content or None
+
+    @staticmethod
+    def _as_blocks(content: str | list[dict]) -> list[dict]:
+        return [{"type": "text", "text": content}] if isinstance(content, str) else content
+
+    @staticmethod
+    def _pair_tool_blocks(api_messages: list[dict]) -> list[dict]:
+        """Make every tool_use answered by a tool_result in the next message.
+
+        Trimming long histories can separate a call from its result. A result
+        whose call is gone becomes plain text; a call whose result is gone
+        gets a placeholder error result. Results always lead their message.
+        """
+        def ids(message, block_type, key):
+            if not message or not isinstance(message["content"], list):
+                return set()
+            return {b[key] for b in message["content"] if b.get("type") == block_type}
+
+        out: list[dict] = []
+        for msg in api_messages:
+            prev = out[-1] if out and out[-1]["role"] == "assistant" else None
+            if msg["role"] == "user":
+                calls = ids(prev, "tool_use", "id")
+                blocks = AnthropicClient._as_blocks(msg["content"])
+                results, others = [], []
+                for b in blocks:
+                    if b.get("type") != "tool_result":
+                        others.append(b)
+                    elif b["tool_use_id"] in calls:
+                        results.append(b)
+                    else:
+                        others.append({"type": "text", "text": f"Earlier tool result: {b['content']}"})
+                answered = {b["tool_use_id"] for b in results}
+                results += [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": call_id,
+                        "content": "Result omitted to keep the conversation short.",
+                        "is_error": True,
+                    }
+                    for call_id in sorted(calls - answered)
+                ]
+                if results or not isinstance(msg["content"], str):
+                    msg = {"role": "user", "content": results + others}
+            out.append(msg)
+        return out
+
+    @staticmethod
     def _convert_messages(messages: list[ChatMessage]) -> tuple[str, list[dict]]:
         """Split out the system prompt and merge consecutive same-role turns.
 
-        The testbed sends tool calls and tool results as plain assistant and
-        user text, sometimes several in a row; they are merged so that roles
-        alternate.
+        Plain-text turns (and, with ANTHROPIC_TOOL_MESSAGES=text, the tool
+        calls and results the testbed sends as text) are merged so that roles
+        alternate; tool traffic is kept as tool_use / tool_result blocks.
         """
         system_parts: list[str] = []
         api_messages: list[dict] = []
@@ -92,14 +182,21 @@ class AnthropicClient(LLMClient):
             if m.role == MessageRole.SYSTEM:
                 system_parts.append(m.content)
                 continue
-            if not m.content:
+            content = AnthropicClient._content_of(m)
+            if not content:
                 continue
             role = "assistant" if m.role == MessageRole.ASSISTANT else "user"
             if api_messages and api_messages[-1]["role"] == role:
-                api_messages[-1]["content"] += "\n\n" + m.content
+                prev = api_messages[-1]["content"]
+                if isinstance(prev, str) and isinstance(content, str):
+                    api_messages[-1]["content"] = prev + "\n\n" + content
+                else:
+                    api_messages[-1]["content"] = (
+                        AnthropicClient._as_blocks(prev) + AnthropicClient._as_blocks(content)
+                    )
             else:
-                api_messages.append({"role": role, "content": m.content})
-        return "\n\n".join(system_parts), api_messages
+                api_messages.append({"role": role, "content": content})
+        return "\n\n".join(system_parts), AnthropicClient._pair_tool_blocks(api_messages)
 
     def _build_params(
         self,
