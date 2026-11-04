@@ -179,6 +179,19 @@ class NetworkEmulator:
         if not self._run_tc_command(cmd_modprobe, ignore_errors=True):
             logger.warning("Failed to load ifb module (may already be loaded)")
 
+        # Inside a container modprobe usually fails (no /lib/modules), so the
+        # device it would create may not exist; creating it lets the kernel
+        # load the module itself (e.g. Docker Desktop on WSL2).
+        exists = subprocess.run(
+            ["ip", "link", "show", "dev", self.ifb_device],
+            capture_output=True, timeout=10,
+        ).returncode == 0
+        if not exists:
+            cmd_add = f"sudo ip link add {self.ifb_device} type ifb"
+            if not self._run_tc_command(cmd_add):
+                logger.error(f"Failed to create {self.ifb_device}")
+                return False
+
         # Bring up the IFB device
         cmd_link_up = f"sudo ip link set dev {self.ifb_device} up"
         if not self._run_tc_command(cmd_link_up):

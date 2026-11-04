@@ -247,3 +247,38 @@ class TestContextManager:
             pass
 
         mock_clear.assert_called_once()
+
+
+class TestIfbSetup:
+    """Tests for IFB device setup (ingress shaping)."""
+
+    def _setup(self, monkeypatch, device_exists):
+        """Run _setup_ifb with tc/ip commands recorded instead of executed."""
+        import subprocess
+        from types import SimpleNamespace
+
+        commands = []
+        emu = NetworkEmulator(interface="eth0")
+        monkeypatch.setattr(
+            emu, "_run_tc_command",
+            lambda cmd, ignore_errors=False: commands.append(cmd) or True,
+        )
+        monkeypatch.setattr(
+            subprocess, "run",
+            lambda *args, **kwargs: SimpleNamespace(returncode=0 if device_exists else 1),
+        )
+        assert emu._setup_ifb() is True
+        return commands
+
+    def test_creates_ifb_device_when_modprobe_did_not(self, monkeypatch):
+        """In a container modprobe fails, so the device must be created."""
+        commands = self._setup(monkeypatch, device_exists=False)
+        assert "sudo ip link add ifb0 type ifb" in commands
+        assert commands.index("sudo ip link add ifb0 type ifb") < commands.index(
+            "sudo ip link set dev ifb0 up"
+        )
+
+    def test_reuses_existing_ifb_device(self, monkeypatch):
+        commands = self._setup(monkeypatch, device_exists=True)
+        assert not any("type ifb" in c for c in commands)
+        assert "sudo ip link set dev ifb0 up" in commands
