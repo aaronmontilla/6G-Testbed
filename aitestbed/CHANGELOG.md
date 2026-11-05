@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docker-compose.yml`, configuration consistency tests.
 
 ### Fixed
+- Payload traces (`TRACE_PAYLOADS=1`) written in the same second by the same
+  session and turn shared one file name, so later traces overwrote earlier
+  ones (an agent turn writes a trace per model call and per tool call). File
+  names now include milliseconds, are created exclusively, and take a `_1`,
+  `_2`, ... suffix when the name is taken; no trace is overwritten.
 - The Docker entrypoint asked for `OPENAI_API_KEY` for every scenario whose
   name contains "chat", including `chat_anthropic`; Claude scenarios now
   require `ANTHROPIC_API_KEY` instead.

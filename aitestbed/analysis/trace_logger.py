@@ -50,11 +50,12 @@ class TraceLogger:
 
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        now = time.time()
+        timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime(now))
+        millis = int(now * 1000) % 1000
         session_tag = session_id.replace("-", "")[:8]
         scenario_tag = (scenario_id or "scenario").replace(" ", "_")
-        file_name = f"{timestamp}_{scenario_tag}_{session_tag}_turn{turn_index:03d}.json"
-        path = self.log_dir / file_name
+        stem = f"{timestamp}_{millis:03d}_{scenario_tag}_{session_tag}_turn{turn_index:03d}"
 
         events = list(response_events or [])
         if self.max_events and len(events) > self.max_events:
@@ -84,8 +85,25 @@ class TraceLogger:
             trace["note"] = (note or "") + " [trace truncated: TRACE_MAX_BYTES]"
             payload = json.dumps(trace, indent=2, ensure_ascii=True, default=str)
 
-        path.write_text(payload)
-        return str(path)
+        return str(_write_new_file(self.log_dir, stem, payload))
+
+
+def _write_new_file(log_dir: Path, stem: str, payload: str) -> Path:
+    """Write payload to <stem>.json, or <stem>_1.json, <stem>_2.json, ... if taken.
+
+    One turn can produce several traces within the same millisecond (a model
+    call and the tool calls it requested). Each is written to a file of its
+    own; an existing trace is never overwritten.
+    """
+    suffix = 0
+    while True:
+        path = log_dir / (f"{stem}.json" if suffix == 0 else f"{stem}_{suffix}.json")
+        try:
+            with path.open("x", encoding="utf-8") as handle:
+                handle.write(payload)
+            return path
+        except FileExistsError:
+            suffix += 1
 
 
 def _parse_int_env(key: str) -> Optional[int]:
