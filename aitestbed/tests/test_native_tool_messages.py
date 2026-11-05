@@ -32,8 +32,8 @@ def test_tool_calls_and_results_become_blocks():
             MessageRole.ASSISTANT,
             "Checking both.",
             tool_calls=[
-                ToolCall("toolu_1", "camara_list_networks", {"params": {}}),
-                ToolCall("toolu_2", "camara_list_profiles", {"params": {}}),
+                ToolCall("toolu_1", "camara_list_networks", {}),
+                ToolCall("toolu_2", "camara_list_profiles", {}),
             ],
         ),
         ChatMessage(MessageRole.TOOL, "[]", name="camara_list_networks", tool_call_id="toolu_1"),
@@ -53,8 +53,8 @@ def test_tool_calls_and_results_become_blocks():
             "role": "assistant",
             "content": [
                 {"type": "text", "text": "Checking both."},
-                {"type": "tool_use", "id": "toolu_1", "name": "camara_list_networks", "input": {"params": {}}},
-                {"type": "tool_use", "id": "toolu_2", "name": "camara_list_profiles", "input": {"params": {}}},
+                {"type": "tool_use", "id": "toolu_1", "name": "camara_list_networks", "input": {}},
+                {"type": "tool_use", "id": "toolu_2", "name": "camara_list_profiles", "input": {}},
             ],
         },
         {
@@ -75,14 +75,14 @@ def test_tool_calls_and_results_become_blocks():
 def test_raw_content_is_sent_back_unchanged():
     raw = [
         {"type": "thinking", "thinking": "", "signature": "sig"},
-        {"type": "tool_use", "id": "toolu_1", "name": "camara_get_area", "input": {"params": {"areaId": "a1"}}},
+        {"type": "tool_use", "id": "toolu_1", "name": "camara_get_area", "input": {"areaId": "a1"}},
     ]
     messages = [
         ChatMessage(MessageRole.USER, "area a1?"),
         ChatMessage(
             MessageRole.ASSISTANT,
             "",
-            tool_calls=[ToolCall("toolu_1", "camara_get_area", {"params": {"areaId": "a1"}})],
+            tool_calls=[ToolCall("toolu_1", "camara_get_area", {"areaId": "a1"})],
             raw_content=raw,
         ),
         ChatMessage(MessageRole.TOOL, "{}", name="camara_get_area", tool_call_id="toolu_1"),
@@ -234,7 +234,7 @@ def test_agent_loop_sends_native_tool_messages(claude):
     client, api = claude(
         [
             sdk_response(
-                [block(type="tool_use", id="toolu_1", name="camara_list_networks", input={"params": {}})],
+                [block(type="tool_use", id="toolu_1", name="camara_list_networks", input={})],
                 "tool_use",
             ),
             sdk_response([block(type="text", text="You have no networks.")], "end_turn"),
@@ -246,7 +246,7 @@ def test_agent_loop_sends_native_tool_messages(claude):
     second = api.calls[1]["messages"]
     assert second[1] == {
         "role": "assistant",
-        "content": [{"type": "tool_use", "id": "toolu_1", "name": "camara_list_networks", "input": {"params": {}}}],
+        "content": [{"type": "tool_use", "id": "toolu_1", "name": "camara_list_networks", "input": {}}],
     }
     assert second[2]["role"] == "user"
     tool_result = second[2]["content"][0]
