@@ -8,6 +8,7 @@ python -m pytest tests
 """
 
 import asyncio
+import json
 from types import SimpleNamespace
 
 import pytest
@@ -192,8 +193,9 @@ def test_assistant_tool_message_keeps_raw_blocks_without_nulls(claude):
 
 
 class FakeExecutor:
-    def __init__(self):
+    def __init__(self, backend_meta=None):
         self.calls = []
+        self.backend_meta = backend_meta
 
     def get_tools_for_openai(self):
         return [{"type": "function", "function": {"name": "camara_list_networks", "parameters": {}}}]
@@ -207,15 +209,16 @@ class FakeExecutor:
             latency_sec=0.01,
             request_bytes=10,
             response_bytes=20,
-            backend_meta=None,
+            backend_meta=self.backend_meta,
         )
 
 
-def run_turn(client):
+def run_turn(client, executor=None):
     logger = SimpleNamespace(records=[])
     logger.log = logger.records.append
     scenario = GeneralAgentScenario(client, logger, {"model": "claude-sonnet-5-5"})
-    scenario.tool_executor = FakeExecutor()
+    scenario.tool_executor = executor or FakeExecutor()
+    scenario.tool_executor.records = logger.records
     result = asyncio.run(
         scenario._run_agent_turn(
             user_prompt="list my networks",
@@ -270,3 +273,32 @@ def test_agent_loop_text_mode_keeps_plain_text(claude):
     second = api.calls[1]["messages"]
     assert second[1] == {"role": "assistant", "content": "Calling camara_list_networks..."}
     assert second[2]["content"].startswith("Tool result from camara_list_networks:")
+
+
+def test_gateway_telemetry_is_stored_with_the_tool_call(claude):
+    """The CAMARA gateway reports its own time and connections in _meta (backend_meta)."""
+    meta = {
+        "backend_calls": [{"method": "GET", "latency_sec": 0.1, "new_connection": False}],
+        "backend_total_latency_sec": 0.1,
+        "gateway_latency_sec": 0.1004,
+        "token_wait_sec": 0.0,
+        "backend_new_connections": 0,
+        "backend_connect_sec": 0.0,
+    }
+    client, _ = claude(
+        [
+            sdk_response(
+                [block(type="tool_use", id="toolu_1", name="camara_list_networks", input={})],
+                "tool_use",
+            ),
+            sdk_response([block(type="text", text="Done.")], "end_turn"),
+        ]
+    )
+    _, executor = run_turn(client, FakeExecutor(backend_meta=meta))
+    tool_records = [json.loads(r.metadata) for r in executor.records
+                    if r.metadata and json.loads(r.metadata).get("type") == "mcp_tool_call"]
+    assert len(tool_records) == 1
+    stored = tool_records[0]
+    for key in ("backend_total_latency_sec", "gateway_latency_sec", "token_wait_sec",
+                "backend_new_connections", "backend_connect_sec", "backend_calls"):
+        assert stored[key] == meta[key]

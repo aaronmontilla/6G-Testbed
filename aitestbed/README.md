@@ -204,7 +204,9 @@ The `dn_*` scenarios drive an agent that reserves dedicated networks through the
    gateway's CAMARA API calls, not to the local agent-gateway hop. The flag also skips the loopback capture, which
    would be empty.
 
-Failed API calls come back as MCP tool errors (`isError`), so they count as failures in the metrics. `dn_cleanup`
+Failed API calls come back as MCP tool errors (`isError`), so they count as failures in the metrics. Each result also
+carries the gateway's telemetry in `_meta` (CAMARA API requests, token time, time inside the gateway, connections
+opened), which is stored with the tool call, so the gateway's own latency can be told apart from the API's. `dn_cleanup`
 deletes **everything** the credentials can see; enable it only if they are used exclusively for tests.
 
 ### Browser Automation

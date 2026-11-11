@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docker-compose.yml`, configuration consistency tests.
 
 ### Changed
+- The CAMARA gateway is pinned to `c5d2505`: it reuses its connection to the
+  CAMARA API between tool calls and reports per-call telemetry in `_meta`
+  (backend calls, token time, time inside the server, connections opened).
+  The agent scenarios now also store `gateway_latency_sec`, `token_wait_sec`,
+  `backend_new_connections` and `backend_connect_sec` with each tool call.
 - The `dn_*` CAMARA scenarios use `mcp_transport: stdio`. With HTTP the network
   profile was applied twice to every tool call: on the loopback hop between the
   agent and the gateway, and again on the gateway's calls to the CAMARA API.
