@@ -180,8 +180,12 @@ mcpServers:
   #   CAMARA_CLIENT_SECRET, CAMARA_SCOPE, CAMARA_TOKEN_AUTH) from the
   #   testbed's environment, which MCP servers inherit; with client
   #   credentials it renews the token itself.
-  # The server is stdio-only, so it is wrapped with http_bridge to route
-  # traffic over HTTP (subject to tc/netem on loopback).
+  # The server is stdio-only. It is wrapped with http_bridge, which passes
+  # stdio through unchanged when the scenario uses mcp_transport: stdio (the
+  # dn_* scenarios do: the gateway is a local process of the agent host, and
+  # only its CAMARA API calls cross the emulated link). With
+  # mcp_transport: http the bridge serves it over loopback instead, and the
+  # profile is also applied to the agent-gateway hop.
   camara-dn:
     name: camara-dn
     command: python

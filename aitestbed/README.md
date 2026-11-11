@@ -199,6 +199,10 @@ The `dn_*` scenarios drive an agent that reserves dedicated networks through the
    credentials the gateway renews the token itself, so long runs keep working after the first token expires.
 3. In `configs/scenarios.yaml`, replace the `<...>` placeholders of the `dn_agent_*` scenarios with values valid in your
    CAMARA environment and set `disabled: false`.
+4. Run them with `--mcp-transport stdio`. The `dn_*` scenarios use stdio: the gateway runs as a local process of the
+   agent host, as an MCP host would launch it, so the network profile applies to the model API calls and to the
+   gateway's CAMARA API calls, not to the local agent-gateway hop. The flag also skips the loopback capture, which
+   would be empty.
 
 Failed API calls come back as MCP tool errors (`isError`), so they count as failures in the metrics. `dn_cleanup`
 deletes **everything** the credentials can see; enable it only if they are used exclusively for tests.

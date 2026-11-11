@@ -20,6 +20,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pinned commit), `CAMARA_*` variables in `.env.example` and
   `docker-compose.yml`, configuration consistency tests.
 
+### Changed
+- The `dn_*` CAMARA scenarios use `mcp_transport: stdio`. With HTTP the network
+  profile was applied twice to every tool call: on the loopback hop between the
+  agent and the gateway, and again on the gateway's calls to the CAMARA API.
+  The gateway is a local process of the agent host, so only the second hop
+  (and the model API calls) should cross the emulated link.
+
 ### Fixed
 - Payload traces (`TRACE_PAYLOADS=1`) written in the same second by the same
   session and turn shared one file name, so later traces overwrote earlier

@@ -72,7 +72,8 @@ def test_dedicated_network_scenarios_ship_disabled_and_use_the_gateway(scenarios
     assert scenario["disabled"] is True
     assert scenario["provider"] == "anthropic"
     assert scenario["server_group"] == "dedicated_networks"
-    assert scenario["mcp_transport"] == "http"
+    # The gateway runs as a local process: the agent-gateway hop is not shaped.
+    assert scenario["mcp_transport"] == "stdio"
 
 
 @pytest.mark.parametrize(
