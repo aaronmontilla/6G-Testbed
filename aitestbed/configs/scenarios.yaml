@@ -132,8 +132,9 @@ scenarios:
     provider: "anthropic"
     model: "claude-sonnet-5-5"
     server_group: "dedicated_networks"
-    mcp_transport: "http"
-    loopback_interface: "lo"
+    # stdio: the gateway runs as a local process of the agent host, so only its
+    # calls to the CAMARA API (and the model API calls) cross the emulated link.
+    mcp_transport: "stdio"
     max_tool_calls: 15
     system_prompt: |
       You are a network operations assistant. You manage CAMARA dedicated
@@ -165,8 +166,9 @@ scenarios:
     provider: "anthropic"
     model: "claude-sonnet-5-5"
     server_group: "dedicated_networks"
-    mcp_transport: "http"
-    loopback_interface: "lo"
+    # stdio: the gateway runs as a local process of the agent host, so only its
+    # calls to the CAMARA API (and the model API calls) cross the emulated link.
+    mcp_transport: "stdio"
     max_tool_calls: 15
     system_prompt: |
       You are a network operations assistant. You manage CAMARA dedicated
@@ -198,8 +200,9 @@ scenarios:
     provider: "anthropic"
     model: "claude-sonnet-5-5"
     server_group: "dedicated_networks"
-    mcp_transport: "http"
-    loopback_interface: "lo"
+    # stdio: the gateway runs as a local process of the agent host, so only its
+    # calls to the CAMARA API (and the model API calls) cross the emulated link.
+    mcp_transport: "stdio"
     max_tool_calls: 30
     system_prompt: |
       You are a network operations assistant with camara_* tools.
