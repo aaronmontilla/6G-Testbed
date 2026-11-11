@@ -671,6 +671,12 @@ class BaseAgentScenario(BaseScenario):
                             tool_meta["backend_calls"] = bm["backend_calls"]
                         if bm.get("token_call"):
                             tool_meta["token_call"] = bm["token_call"]
+                        # Reported by the CAMARA gateway: time inside the server, time
+                        # getting the OAuth token, and connections opened to the API.
+                        for key in ("gateway_latency_sec", "token_wait_sec",
+                                    "backend_new_connections", "backend_connect_sec"):
+                            if key in bm:
+                                tool_meta[key] = bm[key]
 
                     # Build trace payloads for MCP tool call
                     tool_trace_req = {
