@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docker-compose.yml`, configuration consistency tests.
 
 ### Changed
+- The CAMARA gateway is pinned to `cda2786`, which adds optional short map
+  links: run with `-e CAMARA_MAP_LINKS=local` and the area tools return
+  `http://127.0.0.1:8765/map/<areaId>`, resolved on demand by the gateway,
+  instead of geojson.io links with the geometry embedded. Default unchanged.
 - The CAMARA gateway is pinned to `c5d2505`: it reuses its connection to the
   CAMARA API between tool calls and reports per-call telemetry in `_meta`
   (backend calls, token time, time inside the server, connections opened).
