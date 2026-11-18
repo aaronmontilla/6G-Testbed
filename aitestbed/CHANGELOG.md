@@ -21,6 +21,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docker-compose.yml`, configuration consistency tests.
 
 ### Changed
+- The CAMARA gateway is pinned to `e357637`, which adds evaluation baselines:
+  `-e CAMARA_CONTRACT=plain` exposes a contract approximating a wrapper
+  generated from the CAMARA OpenAPI files (operation summaries, specification
+  texts and constraints, raw API responses, no prompts) and implies
+  `CAMARA_ERRORS=raw`, which returns API errors as they came. Default unchanged.
 - The CAMARA gateway is pinned to `cda2786`, which adds optional short map
   links: run with `-e CAMARA_MAP_LINKS=local` and the area tools return
   `http://127.0.0.1:8765/map/<areaId>`, resolved on demand by the gateway,

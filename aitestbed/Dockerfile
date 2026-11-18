@@ -121,7 +121,7 @@ RUN playwright install chromium --with-deps \
 # reproducible; override CAMARA_GATEWAY_REF to use another version.
 ARG WITH_CAMARA=0
 ARG CAMARA_GATEWAY_REPO=https://github.com/aaronmontilla/rt-camara-examples.git
-ARG CAMARA_GATEWAY_REF=cda27867ee4e77581a974b5553f2a670698f2743
+ARG CAMARA_GATEWAY_REF=e357637706f2a91cfebff22219530d2ce80154e7
 RUN if [ "$WITH_CAMARA" = "1" ]; then \
         git clone --quiet --filter=blob:none --no-checkout "$CAMARA_GATEWAY_REPO" /tmp/rt-camara \
         && git -C /tmp/rt-camara checkout --quiet "$CAMARA_GATEWAY_REF" \
