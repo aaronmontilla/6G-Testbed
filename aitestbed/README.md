@@ -206,7 +206,9 @@ The `dn_*` scenarios drive an agent that reserves dedicated networks through the
 
 Failed API calls come back as MCP tool errors (`isError`), so they count as failures in the metrics. Each result also
 carries the gateway's telemetry in `_meta` (CAMARA API requests, token time, time inside the gateway, connections
-opened), which is stored with the tool call, so the gateway's own latency can be told apart from the API's. `dn_cleanup`
+opened), which is stored with the tool call, so the gateway's own latency can be told apart from the API's. With
+`-e CAMARA_MAP_LINKS=local` the gateway returns short map links (`http://127.0.0.1:8765/map/<areaId>`), resolved on
+demand, instead of geojson.io links with the whole geometry in the URL. `dn_cleanup`
 deletes **everything** the credentials can see; enable it only if they are used exclusively for tests.
 
 ### Browser Automation
